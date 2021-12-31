@@ -1,0 +1,23 @@
+FROM golang:1.17 AS builder
+
+WORKDIR /app
+
+COPY go.mod ./
+COPY go.sum ./
+RUN go mod download
+
+COPY . ./
+
+ENV CGO_ENABLED=0 GOOS=linux GOARCH=amd64
+RUN go build -o /todo-service cmd/todo-service/main.go  
+
+
+FROM scratch
+
+WORKDIR /
+
+COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
+COPY --from=builder /todo-service /todo-service
+
+ENTRYPOINT ["/todo-service"]
+EXPOSE 8080
